@@ -1,0 +1,16 @@
+services:
+  my_sql:
+    container_name: 'guide-mysql'
+    image: mysql:latest
+    environment:
+      MYSQL_USER: sergiu
+      MYSQL_ROOT_PASSWORD: 2001
+      MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: ec2instance
+    ports:
+      - "3307:3306"
+    volumes:
+      - my-db-volume:/var/lib/mysql
+
+volumes:
+  my-db-volume:

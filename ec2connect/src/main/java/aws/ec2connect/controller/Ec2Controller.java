@@ -57,9 +57,9 @@ public class Ec2Controller {
         return ResponseEntity.ok(ec2Service.createSecurityGroup(groupName,description,vpcId, myIpAddress));
     }
 
-    @GetMapping("/types")
-    public ResponseEntity<List<String>> getInstanceTypes() {
-        return ResponseEntity.ok(ec2Service.getInstanceTypes());
+    @GetMapping("/types/{instanceTypeName}")
+    public ResponseEntity<List<String>> getInstanceTypes(@PathVariable String instanceTypeName) {
+        return ResponseEntity.ok(ec2Service.getInstanceTypes(instanceTypeName));
     }
 
     @GetMapping("/imagesRH")

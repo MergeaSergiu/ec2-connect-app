@@ -11,9 +11,11 @@ import java.util.List;
 public class EC2Service {
 
     private final Ec2Client ec2Client;
+    private final PricingService pricingService;
 
-    public EC2Service(Ec2Client ec2Client) {
+    public EC2Service(Ec2Client ec2Client, PricingService pricingService) {
         this.ec2Client = ec2Client;
+        this.pricingService = pricingService;
     }
 
     public List<String> getInstances() {
@@ -159,19 +161,71 @@ public class EC2Service {
         return "Security Group created";
     }
 
-    public List<String> getInstanceTypes() {
-        List<String> instanceTypesResponse = new ArrayList<>();
-        DescribeInstanceTypesRequest typesRequest = DescribeInstanceTypesRequest.builder()
-                .maxResults(15)
-                .build();
+    public List<String> getInstanceTypes(String instanceTypeName) {
+//        List<String> instanceTypesResponse = new ArrayList<>();
+//        DescribeInstanceTypesRequest typesRequest = DescribeInstanceTypesRequest.builder()
+//                .build();
+//
+//        DescribeInstanceTypesResponse response = ec2Client.describeInstanceTypes(typesRequest);
+//        for (InstanceTypeInfo instanceTypes : response.instanceTypes().stream()
+//                .filter(instance ->
+//                        instance.instanceType().toString().equalsIgnoreCase(instanceTypeName) ||
+//                                instance.instanceType().toString().toLowerCase().contains(instanceTypeName.toLowerCase())
+//                )
+//                .toList()){
+//            String instanceType = instanceTypes.instanceType().toString();
+//            String price = pricingService.getPriceForInstanceType(instanceType, "US East (N. Virginia)");
+//            if(price.contains("N/A")) continue;
+//            instanceTypesResponse.add(
+//                    "Instance Type: " + instanceType+
+//                            ", vCPUs: " + instanceTypes.vCpuInfo().defaultVCpus() +
+//                            ", Memory: " + instanceTypes.memoryInfo().sizeInMiB() + " MiB" +
+//                            ", Price per Hour on Linux: " + price
+//            );
+//        }
+//        return instanceTypesResponse;
 
-        DescribeInstanceTypesResponse response = ec2Client.describeInstanceTypes(typesRequest);
-        for(InstanceTypeInfo instanceTypes : response.instanceTypes()){
-            instanceTypesResponse.add(
-                    "Instance Type: " + instanceTypes.instanceType().toString()+
-                            ", Memory: " + instanceTypes.memoryInfo().sizeInMiB() + " MiB"
-            );
-        }
+        List<String> instanceTypesResponse = new ArrayList<>();
+        String nextToken = null;
+
+        do {
+            // Request to describe instance types, applying pagination if necessary
+            DescribeInstanceTypesRequest.Builder typesRequestBuilder = DescribeInstanceTypesRequest.builder()
+                    .maxResults(10);  // Limit the number of results per page (you can adjust this)
+
+            if (nextToken != null) {
+                typesRequestBuilder.nextToken(nextToken);  // Add the nextToken for pagination
+            }
+
+            DescribeInstanceTypesRequest typesRequest = typesRequestBuilder.build();
+            DescribeInstanceTypesResponse response = ec2Client.describeInstanceTypes(typesRequest);
+
+            // Filter instance types by checking if their name contains or equals the instanceTypeName
+            for (InstanceTypeInfo instanceTypes : response.instanceTypes()) {
+                String instanceType = instanceTypes.instanceType().toString();
+                if (instanceType.equalsIgnoreCase(instanceTypeName) || instanceType.toLowerCase().contains(instanceTypeName.toLowerCase())) {
+                    String price = pricingService.getPriceForInstanceType(instanceType, "US East (N. Virginia)");
+
+                    // Skip if price contains "N/A"
+                    if (price.contains("N/A")) {
+                        continue;
+                    }
+
+                    // Add instance type information to the list
+                    instanceTypesResponse.add(
+                            "Instance Type: " + instanceType +
+                                    ", vCPUs: " + instanceTypes.vCpuInfo().defaultVCpus() +
+                                    ", Memory: " + instanceTypes.memoryInfo().sizeInMiB() + " MiB" +
+                                    ", Price per Hour on Linux: " + price
+                    );
+                }
+            }
+
+            // Update nextToken for the next page if there is more data
+            nextToken = response.nextToken();
+
+        } while (nextToken != null);  // Continue if there is another page of results
+
         return instanceTypesResponse;
     }
 

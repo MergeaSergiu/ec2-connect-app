@@ -67,6 +67,11 @@ public class Ec2Controller {
         return ResponseEntity.ok(ec2Service.getImagesForRedHat());
     }
 
+    @GetMapping("/alarms/{instanceId}")
+    public ResponseEntity<List<String>> getAlarms(@PathVariable String instanceId) {
+        return ResponseEntity.ok(ec2Service.getAlarmsForInstance(instanceId));
+    }
+
 //    @GetMapping("/imagesWindows")
 //    public ResponseEntity<List<String>> getImagesForWindows() {
 //        return ResponseEntity.ok(ec2Service.getImagesForWindows());

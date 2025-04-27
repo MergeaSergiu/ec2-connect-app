@@ -1,6 +1,10 @@
 package aws.ec2connect.service;
 
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsRequest;
+import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsResponse;
+import software.amazon.awssdk.services.cloudwatch.model.MetricAlarm;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 
@@ -12,10 +16,14 @@ public class EC2Service {
 
     private final Ec2Client ec2Client;
     private final PricingService pricingService;
+    private final CloudWatchClient cloudWatchClient;
 
-    public EC2Service(Ec2Client ec2Client, PricingService pricingService) {
+    public EC2Service(Ec2Client ec2Client,
+                      PricingService pricingService,
+                      CloudWatchClient cloudWatchClient) {
         this.ec2Client = ec2Client;
         this.pricingService = pricingService;
+        this.cloudWatchClient = cloudWatchClient;
     }
 
     public List<String> getInstances() {
@@ -62,7 +70,6 @@ public class EC2Service {
         DescribeInstancesRequest describeInstancesRequest = DescribeInstancesRequest.builder().instanceIds(instanceId).build();
         DescribeInstancesResponse describeInstancesResponse = ec2Client.describeInstances(describeInstancesRequest);
         Instance instance = describeInstancesResponse.reservations().getFirst().instances().getFirst();
-
         instanceDetails = "Instance ID: " + instance.instanceId() +
                 ", status: " + instance.state().name() +
                 ", type: " + instance.instanceType().name() +
@@ -247,6 +254,34 @@ public class EC2Service {
             );
         }
         return imageResponse;
+    }
+
+    public List<String> getAlarmsForInstance(String instanceId) {
+        List<String> alarms = new ArrayList<>();
+        String nextToken = null;
+
+        do {
+            // Request to describe alarms
+            DescribeAlarmsRequest request = DescribeAlarmsRequest.builder()
+                    .nextToken(nextToken)
+                    .build();
+
+            // Get the response
+            DescribeAlarmsResponse response = cloudWatchClient.describeAlarms(request);
+
+            // Loop through alarms and check if they are associated with the specified EC2 instance
+            for (MetricAlarm alarm : response.metricAlarms()) {
+                boolean matchesInstance = alarm.dimensions().stream()
+                        .anyMatch(d -> d.name().equals("InstanceId") && d.value().equals(instanceId));
+
+                if (matchesInstance) {
+                    alarms.add(alarm.alarmName());  // Add the alarm name if it matches
+                }
+            }
+            nextToken = response.nextToken();  // Handle pagination if needed
+        } while (nextToken != null);  // If the response is paginated
+
+        return alarms;
     }
 
 //    public List<String> getImagesForWindows(){

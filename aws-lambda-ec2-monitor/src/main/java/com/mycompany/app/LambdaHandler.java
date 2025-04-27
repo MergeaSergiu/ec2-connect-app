@@ -14,11 +14,10 @@ import java.util.Map;
 
 public class LambdaHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
-    private static final String SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:150241865396:Default_CloudWatch_Alarms_Topic";  // Replace with your actual SNS Topic ARN
-    private static final String PHONE_NUMBER = "+40746037670"; // Replace with the user's phone number
+    private static final String SNS_TOPIC_ARN = "xxxxx";  // Replace with your actual SNS Topic ARN
+    private static final String PHONE_NUMBER = "xxxxxx"; // Replace with the user's phone number
 
     private static final CloudWatchClient cloudWatch = CloudWatchClient.create();
-    private static final Ec2Client ec2 = Ec2Client.create();
     private static final SnsClient snsClient = SnsClient.create();
     private final ObjectMapper objectMapper = new ObjectMapper();
 

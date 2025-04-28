@@ -11,6 +11,22 @@ services:
       - "3307:3306"
     volumes:
       - my-db-volume:/var/lib/mysql
+  maildev:
+    image: maildev/maildev
+    container_name: maildev
+    ports:
+      - "1080:1080" # web UI
+      - "1025:1025" # SMTP server
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"     # RabbitMQ (AMQP) - for your app
+      - "15672:15672"   # RabbitMQ Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
 
 volumes:
   my-db-volume:
